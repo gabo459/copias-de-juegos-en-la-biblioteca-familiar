@@ -96,13 +96,50 @@
     .status-banner {
       padding: 12px;
       border-radius: 6px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       font-size: 0.88rem;
       display: none;
     }
 
     .status-banner.error { background: rgba(231, 76, 60, 0.2); border: 1px solid var(--steam-error); color: var(--steam-error); }
     .status-banner.info { background: rgba(102, 192, 244, 0.2); border: 1px solid var(--steam-accent); color: var(--steam-accent); }
+
+    /* Estilos de la Barra de Progreso */
+    .progress-card {
+      background: var(--steam-bg-card);
+      border: 1px solid var(--steam-border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-bottom: 25px;
+      display: none;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .progress-bar-outer {
+      width: 100%;
+      height: 16px;
+      background: #090b0e;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #1973a5 0%, var(--steam-accent) 100%);
+      border-radius: 8px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(102, 192, 244, 0.5);
+    }
 
     .stats-panel {
       display: grid;
@@ -231,10 +268,10 @@
       border-radius: 12px;
       font-weight: bold;
       font-size: 0.85rem;
+      background: rgba(164, 208, 7, 0.15);
+      color: var(--steam-success);
+      border: 1px solid var(--steam-success);
     }
-
-    .copies-single { background: rgba(102, 192, 244, 0.15); color: var(--steam-accent); border: 1px solid var(--steam-accent); }
-    .copies-multiple { background: rgba(164, 208, 7, 0.15); color: var(--steam-success); border: 1px solid var(--steam-success); }
 
     .owner-tag {
       display: inline-block;
@@ -261,8 +298,8 @@
   <div class="container">
     
     <header>
-      <h1>Contador de Copias de la Biblioteca Familiar</h1>
-      <p>Ingresa la API Key y los enlaces/IDs de los integrantes de tu familia para analizar los juegos compartidos y cuántas copias existen.</p>
+      <h1>Juegos con Múltiples Copias en la Familia</h1>
+      <p>Muestra únicamente los juegos compartidos que cuentan con <b>2 o más copias</b> en la biblioteca del grupo.</p>
     </header>
 
     <div class="config-card">
@@ -283,38 +320,35 @@
 
     <div id="status-banner" class="status-banner"></div>
 
+    <!-- Componente de Barra de Progreso -->
+    <div class="progress-card" id="progress-card">
+      <div class="progress-header">
+        <span id="progress-status-text" style="color: var(--steam-accent);">PROCESANDO BIBLIOTECAS...</span>
+        <span id="progress-percent-text" style="color: var(--steam-gold);">0% (0 / 0)</span>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar-inner"></div>
+      </div>
+    </div>
+
     <div class="stats-panel">
       <div class="stat-card">
         <div>Integrantes Analizados</div>
         <div class="stat-value" id="stat-members">0</div>
       </div>
       <div class="stat-card">
-        <div>Juegos Únicos</div>
-        <div class="stat-value" id="stat-unique">0</div>
-      </div>
-      <div class="stat-card">
-        <div>Total de Licencias / Copias</div>
-        <div class="stat-value" style="color: var(--steam-success);" id="stat-total-copies">0</div>
-      </div>
-      <div class="stat-card">
         <div>Juegos con >1 Copia</div>
         <div class="stat-value" style="color: var(--steam-gold);" id="stat-duplicates">0</div>
+      </div>
+      <div class="stat-card">
+        <div>Total Licencias en Repetidos</div>
+        <div class="stat-value" style="color: var(--steam-success);" id="stat-total-copies">0</div>
       </div>
     </div>
 
     <div class="controls-bar">
       <div class="controls-group">
-        <span class="control-label">Filtrar:</span>
-        <div class="filter-buttons">
-          <button class="btn-filter active" id="btn-filter-all" onclick="setCopyFilter('all', this)">
-            Todos los Juegos
-          </button>
-          <button class="btn-filter" id="btn-filter-duplicates" onclick="setCopyFilter('duplicates', this)">
-            <i class="fas fa-copy"></i> Múltiples Copias (>1)
-          </button>
-        </div>
-
-        <span class="control-label" style="margin-left: 10px;">Ordenar:</span>
+        <span class="control-label">Ordenar:</span>
         <div class="filter-buttons">
           <button class="btn-filter active" id="btn-sort-copies" onclick="setSortMode('copies', this)">
             <i class="fas fa-sort-amount-down"></i> Copias
@@ -327,7 +361,7 @@
 
       <div class="search-box">
         <i class="fas fa-search" style="color: var(--steam-text-muted);"></i>
-        <input type="text" id="search-input" placeholder="Buscar juego..." oninput="filterAndSortGames()">
+        <input type="text" id="search-input" placeholder="Buscar juego o dueño..." oninput="filterAndSortGames()">
       </div>
     </div>
 
@@ -343,7 +377,7 @@
         <tbody id="games-table-body">
           <tr>
             <td colspan="3" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">
-              Ingresa los datos arriba para consolidar las bibliotecas de tu grupo familiar.
+              Ingresa los datos arriba para consolidar los juegos repetidos de tu grupo familiar.
             </td>
           </tr>
         </tbody>
@@ -355,8 +389,7 @@
   <script>
     const CORS_PROXY = "https://corsproxy.io/?";
     let masterFamilyLibrary = [];
-    let activeCopyFilter = 'all';
-    let activeSortMode = 'copies'; // 'copies' o 'name'
+    let activeSortMode = 'copies';
 
     function showStatus(msg, isError = false) {
       const banner = document.getElementById('status-banner');
@@ -367,6 +400,29 @@
 
     function hideStatus() {
       document.getElementById('status-banner').style.display = 'none';
+    }
+
+    function updateProgress(current, total, memberName = '') {
+      const card = document.getElementById('progress-card');
+      const inner = document.getElementById('progress-bar-inner');
+      const percentText = document.getElementById('progress-percent-text');
+      const statusText = document.getElementById('progress-status-text');
+
+      card.style.display = 'block';
+      const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+      
+      inner.style.width = `${percent}%`;
+      percentText.textContent = `${percent}% (${current} / ${total})`;
+      
+      if (memberName) {
+        statusText.textContent = `ESCANEANDO: ${memberName}`;
+      } else {
+        statusText.textContent = `INICIANDO ESCANEO...`;
+      }
+    }
+
+    function hideProgress() {
+      document.getElementById('progress-card').style.display = 'none';
     }
 
     async function resolveSteamId(userInput, apiKey) {
@@ -417,9 +473,12 @@
       const familyGamesMap = {};
       let processedMembersCount = 0;
 
+      updateProgress(0, memberEntries.length);
+
       try {
         for (let i = 0; i < memberEntries.length; i++) {
           const entry = memberEntries[i];
+          updateProgress(i, memberEntries.length, entry);
           showStatus(`Resolviendo ID y biblioteca (${i + 1}/${memberEntries.length}): ${entry}...`);
 
           const steamId = await resolveSteamId(entry, apiKey);
@@ -432,6 +491,8 @@
               personaName = userData.response.players[0].personaname;
             }
           } catch (e) {}
+
+          updateProgress(i, memberEntries.length, personaName);
 
           const gamesUrl = `${CORS_PROXY}${encodeURIComponent(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=true`)}`;
           const gamesRes = await fetch(gamesUrl);
@@ -460,25 +521,22 @@
 
             processedMembersCount++;
           }
+
+          updateProgress(i + 1, memberEntries.length, personaName);
         }
 
-        masterFamilyLibrary = Object.values(familyGamesMap);
+        // Filtro estricto: Conservar ÚNICAMENTE juegos con 2 o más copias
+        masterFamilyLibrary = Object.values(familyGamesMap).filter(game => game.owners.length >= 2);
 
         hideStatus();
+        hideProgress();
         filterAndSortGames();
         updateStats(processedMembersCount);
 
       } catch (err) {
+        hideProgress();
         showStatus(`Error durante el análisis: ${err.message}`, true);
       }
-    }
-
-    function setCopyFilter(filter, btn) {
-      activeCopyFilter = filter;
-      const group = btn.closest('.filter-buttons');
-      group.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filterAndSortGames();
     }
 
     function setSortMode(sortMode, btn) {
@@ -492,16 +550,11 @@
     function filterAndSortGames() {
       const query = document.getElementById('search-input').value.toLowerCase().trim();
 
-      // 1. Filtrar
-      let list = masterFamilyLibrary.filter(game => {
-        const matchesCopyFilter = activeCopyFilter === 'all' || (activeCopyFilter === 'duplicates' && game.owners.length > 1);
-        const matchesQuery = game.name.toLowerCase().includes(query) ||
-                             game.owners.some(o => o.name.toLowerCase().includes(query));
+      let list = masterFamilyLibrary.filter(game => 
+        game.name.toLowerCase().includes(query) ||
+        game.owners.some(o => o.name.toLowerCase().includes(query))
+      );
 
-        return matchesCopyFilter && matchesQuery;
-      });
-
-      // 2. Ordenar
       if (activeSortMode === 'copies') {
         list.sort((a, b) => b.owners.length - a.owners.length || a.name.localeCompare(b.name));
       } else if (activeSortMode === 'name') {
@@ -516,13 +569,12 @@
       tbody.innerHTML = '';
 
       if (games.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">No se encontraron juegos que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">No se encontraron juegos con múltiples copias que coincidan con la búsqueda.</td></tr>`;
         return;
       }
 
       games.forEach(game => {
         const count = game.owners.length;
-        const badgeClass = count > 1 ? 'copies-multiple' : 'copies-single';
         const ownersHtml = game.owners.map(o => `<span class="owner-tag"><i class="fas fa-user"></i> ${o.name}</span>`).join('');
 
         const tr = document.createElement('tr');
@@ -534,7 +586,7 @@
             </div>
           </td>
           <td style="text-align: center;">
-            <span class="copies-badge ${badgeClass}">${count} ${count === 1 ? 'copia' : 'copias'}</span>
+            <span class="copies-badge">${count} copias</span>
           </td>
           <td>
             ${ownersHtml}
@@ -545,14 +597,12 @@
     }
 
     function updateStats(membersCount) {
-      const uniqueGames = masterFamilyLibrary.length;
-      const totalCopies = masterFamilyLibrary.reduce((acc, g) => acc + g.owners.length, 0);
-      const duplicateGames = masterFamilyLibrary.filter(g => g.owners.length > 1).length;
+      const duplicateGamesCount = masterFamilyLibrary.length;
+      const totalCopiesCount = masterFamilyLibrary.reduce((acc, g) => acc + g.owners.length, 0);
 
       document.getElementById('stat-members').textContent = membersCount;
-      document.getElementById('stat-unique').textContent = uniqueGames;
-      document.getElementById('stat-total-copies').textContent = totalCopies;
-      document.getElementById('stat-duplicates').textContent = duplicateGames;
+      document.getElementById('stat-duplicates').textContent = duplicateGamesCount;
+      document.getElementById('stat-total-copies').textContent = totalCopiesCount;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
