@@ -387,7 +387,9 @@
   </div>
 
   <script>
-    const CORS_PROXY = "https://corsproxy.io/?";
+    // REEMPLAZAR CON LA URL DE TU CLOUDFLARE WORKER:
+    const CORS_PROXY = "https://copies-steam-family.ernestoygabo.workers.dev/";
+
     let masterFamilyLibrary = [];
     let activeSortMode = 'copies';
 
@@ -447,7 +449,7 @@
         console.warn("No se pudo resolver vanity URL:", vanityName);
       }
 
-      return vanityName;
+      return null;
     }
 
     async function analyzeFamilyLibrary() {
@@ -482,6 +484,12 @@
           showStatus(`Resolviendo ID y biblioteca (${i + 1}/${memberEntries.length}): ${entry}...`);
 
           const steamId = await resolveSteamId(entry, apiKey);
+
+          if (!steamId) {
+            console.warn(`No se pudo resolver el ID de Steam para: ${entry}`);
+            showStatus(`Omitiendo usuario no válido: ${entry}`, true);
+            continue;
+          }
 
           let personaName = steamId;
           try {
@@ -525,7 +533,6 @@
           updateProgress(i + 1, memberEntries.length, personaName);
         }
 
-        // Filtro estricto: Conservar ÚNICAMENTE juegos con 2 o más copias
         masterFamilyLibrary = Object.values(familyGamesMap).filter(game => game.owners.length >= 2);
 
         hideStatus();
