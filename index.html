@@ -80,7 +80,7 @@
       background: linear-gradient(90deg, #a4d007 0%, #537000 100%);
       color: #fff;
       border: none;
-      padding: 0 24px;
+      padding: 0 20px;
       height: 42px;
       border-radius: 4px;
       font-weight: bold;
@@ -93,6 +93,12 @@
 
     .btn-steam:hover { filter: brightness(1.2); }
 
+    .btn-export {
+      background: linear-gradient(90deg, #1973a5 0%, #11496b 100%);
+      color: #fff;
+      border: 1px solid var(--steam-accent);
+    }
+
     .status-banner {
       padding: 12px;
       border-radius: 6px;
@@ -104,7 +110,6 @@
     .status-banner.error { background: rgba(231, 76, 60, 0.2); border: 1px solid var(--steam-error); color: var(--steam-error); }
     .status-banner.info { background: rgba(102, 192, 244, 0.2); border: 1px solid var(--steam-accent); color: var(--steam-accent); }
 
-    /* Estilos de la Barra de Progreso */
     .progress-card {
       background: var(--steam-bg-card);
       border: 1px solid var(--steam-border);
@@ -203,10 +208,7 @@
       transition: all 0.2s;
     }
 
-    .btn-filter:hover {
-      background: #2b394a;
-      color: #fff;
-    }
+    .btn-filter:hover { background: #2b394a; color: #fff; }
 
     .btn-filter.active {
       background: var(--steam-accent);
@@ -227,41 +229,14 @@
       overflow: hidden;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-
-    th, td {
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(42, 71, 94, 0.3);
-    }
-
-    th {
-      background: #0d1217;
-      color: var(--steam-accent);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-    }
-
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid rgba(42, 71, 94, 0.3); }
+    th { background: #0d1217; color: var(--steam-accent); font-size: 0.8rem; text-transform: uppercase; }
     tr:hover { background: var(--steam-bg-hover); }
 
-    .game-cell {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: bold;
-    }
-
-    .game-icon {
-      width: 48px;
-      height: 22px;
-      object-fit: cover;
-      border-radius: 3px;
-      background: #0d1217;
-    }
-
+    .game-cell { display: flex; align-items: center; gap: 12px; font-weight: bold; }
+    .game-icon { width: 48px; height: 22px; object-fit: cover; border-radius: 3px; background: #0d1217; }
+    
     .copies-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -285,6 +260,9 @@
       color: var(--steam-text-muted);
     }
 
+    .checkbox-col { width: 40px; text-align: center; }
+    input[type="checkbox"] { cursor: pointer; accent-color: var(--steam-accent); width: 16px; height: 16px; }
+
     @media (max-width: 900px) {
       .form-grid { grid-template-columns: 1fr; }
       .btn-steam { width: 100%; justify-content: center; }
@@ -296,10 +274,9 @@
 <body>
 
   <div class="container">
-    
     <header>
       <h1>Juegos con Múltiples Copias en la Familia</h1>
-      <p>Muestra únicamente los juegos compartidos que cuentan con <b>2 o más copias</b> en la biblioteca del grupo.</p>
+      <p>Muestra únicamente los juegos compartidos con <b>2 o más copias</b>. Selecciona juegos para exportar una imagen de votación.</p>
     </header>
 
     <div class="config-card">
@@ -309,8 +286,8 @@
           <input type="password" id="api-key-input" placeholder="Clave de steamcommunity.com/dev/apikey">
         </div>
         <div class="input-group">
-          <label for="members-input">Perfiles de la Familia (URLs o SteamIDs separados por coma o salto de línea)</label>
-          <textarea id="members-input" placeholder="Ej: https://steamcommunity.com/id/usuario1, 76561198000000002, 76561198000000003"></textarea>
+          <label for="members-input">Perfiles de la Familia (URLs o SteamIDs separados por coma o línea)</label>
+          <textarea id="members-input" placeholder="Ej: https://steamcommunity.com/id/usuario1, 76561198000000002"></textarea>
         </div>
         <button class="btn-steam" onclick="analyzeFamilyLibrary()">
           <i class="fas fa-users"></i> Escanear Familia
@@ -320,7 +297,6 @@
 
     <div id="status-banner" class="status-banner"></div>
 
-    <!-- Componente de Barra de Progreso -->
     <div class="progress-card" id="progress-card">
       <div class="progress-header">
         <span id="progress-status-text" style="color: var(--steam-accent);">PROCESANDO BIBLIOTECAS...</span>
@@ -357,6 +333,10 @@
             <i class="fas fa-sort-alpha-down"></i> Nombre
           </button>
         </div>
+        
+        <button class="btn-steam btn-export" id="btn-export-img" onclick="exportSelectedToImage()" style="display: none;">
+          <i class="fas fa-image"></i> Exportar Imagen (<span id="selected-count">0</span>)
+        </button>
       </div>
 
       <div class="search-box">
@@ -369,6 +349,9 @@
       <table>
         <thead>
           <tr>
+            <th class="checkbox-col">
+              <input type="checkbox" id="select-all" onclick="toggleSelectAll(this)" title="Seleccionar/Deseleccionar todos">
+            </th>
             <th>Juego</th>
             <th style="width: 140px; text-align: center;">Copias en Familia</th>
             <th>Propietarios de Licencia</th>
@@ -376,22 +359,21 @@
         </thead>
         <tbody id="games-table-body">
           <tr>
-            <td colspan="3" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">
+            <td colspan="4" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">
               Ingresa los datos arriba para consolidar los juegos repetidos de tu grupo familiar.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
   </div>
 
   <script>
-    // REEMPLAZAR CON LA URL DE TU CLOUDFLARE WORKER:
-    const CORS_PROXY = "https://copies-steam-family.ernestoygabo.workers.dev/";
+    const CORS_PROXY = "https://copies-steam-family.ernestoygabo.workers.dev/?url=";
 
     let masterFamilyLibrary = [];
     let activeSortMode = 'copies';
+    let selectedAppIds = new Set();
 
     function showStatus(msg, isError = false) {
       const banner = document.getElementById('status-banner');
@@ -415,12 +397,7 @@
       
       inner.style.width = `${percent}%`;
       percentText.textContent = `${percent}% (${current} / ${total})`;
-      
-      if (memberName) {
-        statusText.textContent = `ESCANEANDO: ${memberName}`;
-      } else {
-        statusText.textContent = `INICIANDO ESCANEO...`;
-      }
+      statusText.textContent = memberName ? `ESCANEANDO: ${memberName}` : `INICIANDO ESCANEO...`;
     }
 
     function hideProgress() {
@@ -442,9 +419,7 @@
       try {
         const res = await fetch(`${CORS_PROXY}${encodeURIComponent(`https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=${apiKey}&vanityurl=${vanityName}`)}`);
         const data = await res.json();
-        if (data.response && data.response.success === 1) {
-          return data.response.steamid;
-        }
+        if (data.response && data.response.success === 1) return data.response.steamid;
       } catch (e) {
         console.warn("No se pudo resolver vanity URL:", vanityName);
       }
@@ -456,13 +431,8 @@
       const apiKey = document.getElementById('api-key-input').value.trim();
       const rawMembers = document.getElementById('members-input').value.trim();
 
-      if (!apiKey) {
-        showStatus('Ingresa tu Steam Web API Key.', true);
-        return;
-      }
-
-      if (!rawMembers) {
-        showStatus('Ingresa al menos un perfil de un integrante de la familia.', true);
+      if (!apiKey || !rawMembers) {
+        showStatus('Por favor ingresa la Steam API Key y al menos un perfil.', true);
         return;
       }
 
@@ -474,6 +444,7 @@
 
       const familyGamesMap = {};
       let processedMembersCount = 0;
+      selectedAppIds.clear();
 
       updateProgress(0, memberEntries.length);
 
@@ -481,15 +452,10 @@
         for (let i = 0; i < memberEntries.length; i++) {
           const entry = memberEntries[i];
           updateProgress(i, memberEntries.length, entry);
-          showStatus(`Resolviendo ID y biblioteca (${i + 1}/${memberEntries.length}): ${entry}...`);
+          showStatus(`Resolviendo ID (${i + 1}/${memberEntries.length}): ${entry}...`);
 
           const steamId = await resolveSteamId(entry, apiKey);
-
-          if (!steamId) {
-            console.warn(`No se pudo resolver el ID de Steam para: ${entry}`);
-            showStatus(`Omitiendo usuario no válido: ${entry}`, true);
-            continue;
-          }
+          if (!steamId) continue;
 
           let personaName = steamId;
           try {
@@ -521,10 +487,7 @@
                 };
               }
               
-              familyGamesMap[game.appid].owners.push({
-                steamId: steamId,
-                name: personaName
-              });
+              familyGamesMap[game.appid].owners.push({ steamId: steamId, name: personaName });
             });
 
             processedMembersCount++;
@@ -576,16 +539,20 @@
       tbody.innerHTML = '';
 
       if (games.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">No se encontraron juegos con múltiples copias que coincidan con la búsqueda.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--steam-text-muted); padding: 40px;">No se encontraron juegos con múltiples copias.</td></tr>`;
         return;
       }
 
       games.forEach(game => {
         const count = game.owners.length;
         const ownersHtml = game.owners.map(o => `<span class="owner-tag"><i class="fas fa-user"></i> ${o.name}</span>`).join('');
+        const isChecked = selectedAppIds.has(game.appid) ? 'checked' : '';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
+          <td class="checkbox-col">
+            <input type="checkbox" value="${game.appid}" ${isChecked} onchange="toggleSelectGame(${game.appid}, this.checked)">
+          </td>
           <td>
             <div class="game-cell">
               <img src="${game.icon}" class="game-icon" onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg'; this.onerror=null;">
@@ -601,6 +568,40 @@
         `;
         tbody.appendChild(tr);
       });
+
+      updateSelectionUI();
+    }
+
+    function toggleSelectGame(appid, isChecked) {
+      if (isChecked) {
+        selectedAppIds.add(appid);
+      } else {
+        selectedAppIds.delete(appid);
+      }
+      updateSelectionUI();
+    }
+
+    function toggleSelectAll(masterCheckbox) {
+      const isChecked = masterCheckbox.checked;
+      const checkboxes = document.querySelectorAll('#games-table-body input[type="checkbox"]');
+      
+      checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        const appid = parseInt(cb.value);
+        if (isChecked) selectedAppIds.add(appid);
+        else selectedAppIds.delete(appid);
+      });
+
+      updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+      const btnExport = document.getElementById('btn-export-img');
+      const selectedCountSpan = document.getElementById('selected-count');
+      const count = selectedAppIds.size;
+
+      selectedCountSpan.textContent = count;
+      btnExport.style.display = count > 0 ? 'inline-flex' : 'none';
     }
 
     function updateStats(membersCount) {
@@ -610,6 +611,123 @@
       document.getElementById('stat-members').textContent = membersCount;
       document.getElementById('stat-duplicates').textContent = duplicateGamesCount;
       document.getElementById('stat-total-copies').textContent = totalCopiesCount;
+    }
+
+    // Generador de Imagen mediante HTML5 Canvas
+    async function exportSelectedToImage() {
+      const selectedGames = masterFamilyLibrary.filter(g => selectedAppIds.has(g.appid));
+      if (selectedGames.length === 0) return;
+
+      showStatus("Generando imagen de votación...", false);
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const width = 800;
+      const headerHeight = 130;
+      const cardHeight = 70;
+      const gap = 12;
+      const padding = 30;
+      const totalHeight = headerHeight + (selectedGames.length * (cardHeight + gap)) + padding + 40;
+
+      canvas.width = width;
+      canvas.height = totalHeight;
+
+      // Fondo
+      const bgGradient = ctx.createRadialGradient(width / 2, 0, 50, width / 2, totalHeight / 2, totalHeight);
+      bgGradient.addColorStop(0, '#1b2838');
+      bgGradient.addColorStop(1, '#101216');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, width, totalHeight);
+
+      // Encabezado
+      ctx.fillStyle = '#66c0f4';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('🎮 ¿A QUÉ JUGAMOS HOY?', padding, 55);
+
+      ctx.fillStyle = '#8f98a0';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(`Votación entre ${selectedGames.length} opciones disponibles en la Familia`, padding, 85);
+
+      // Línea divisoria
+      ctx.strokeStyle = '#2a475e';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding, 105);
+      ctx.lineTo(width - padding, 105);
+      ctx.stroke();
+
+      // Renderizar Tarjetas de Juegos
+      let currentY = headerHeight;
+
+      for (let i = 0; i < selectedGames.length; i++) {
+        const game = selectedGames[i];
+
+        // Fondo de tarjeta
+        ctx.fillStyle = '#171a21';
+        ctx.beginPath();
+        ctx.roundRect(padding, currentY, width - (padding * 2), cardHeight, 8);
+        ctx.fill();
+
+        // Borde de tarjeta
+        ctx.strokeStyle = '#2a475e';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Número de opción
+        ctx.fillStyle = '#e5c158';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(`#${i + 1}`, padding + 15, currentY + 42);
+
+        // Nombre del Juego
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px sans-serif';
+        let gameName = game.name;
+        if (gameName.length > 38) gameName = gameName.substring(0, 35) + '...';
+        ctx.fillText(gameName, padding + 60, currentY + 32);
+
+        // Dueños
+        const ownerNames = game.owners.map(o => o.name).join(', ');
+        ctx.fillStyle = '#8f98a0';
+        ctx.font = '13px sans-serif';
+        let ownerText = `Dueños: ${ownerNames}`;
+        if (ownerText.length > 55) ownerText = ownerText.substring(0, 52) + '...';
+        ctx.fillText(ownerText, padding + 60, currentY + 54);
+
+        // Badge de Copias
+        const badgeText = `${game.owners.length} Copias`;
+        ctx.font = 'bold 13px sans-serif';
+        const badgeWidth = ctx.measureText(badgeText).width + 20;
+        const badgeX = width - padding - badgeWidth - 15;
+        const badgeY = currentY + 22;
+
+        ctx.fillStyle = 'rgba(164, 208, 7, 0.15)';
+        ctx.strokeStyle = '#a4d007';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeWidth, 26, 13);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#a4d007';
+        ctx.fillText(badgeText, badgeX + 10, badgeY + 17);
+
+        currentY += cardHeight + gap;
+      }
+
+      // Pie de foto
+      ctx.fillStyle = '#8f98a0';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Generado por Steam Family Library Counter', padding, totalHeight - 20);
+
+      // Descargar Imagen
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `votacion_juegos_steam_${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      hideStatus();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
