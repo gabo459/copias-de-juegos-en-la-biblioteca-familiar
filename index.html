@@ -375,6 +375,15 @@
     let activeSortMode = 'copies';
     let selectedAppIds = new Set();
 
+    // Helper para guardar en localStorage de forma segura sin romper la aplicación
+    function safeSaveStorage(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.warn(`[localStorage] No se pudo guardar '${key}' porque el almacenamiento está lleno.`, e);
+      }
+    }
+
     function showStatus(msg, isError = false) {
       const banner = document.getElementById('status-banner');
       banner.style.display = 'block';
@@ -436,8 +445,9 @@
         return;
       }
 
-      localStorage.setItem('family_saved_key', apiKey);
-      localStorage.setItem('family_saved_members', rawMembers);
+      // Guardado seguro evitando que el error QuotaExceededError detenga la app
+      safeSaveStorage('family_saved_key', apiKey);
+      safeSaveStorage('family_saved_members', rawMembers);
 
       const memberEntries = rawMembers.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
       showStatus(`Procesando ${memberEntries.length} perfiles...`);
@@ -731,11 +741,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      const savedKey = localStorage.getItem('family_saved_key');
-      const savedMembers = localStorage.getItem('family_saved_members');
+      try {
+        const savedKey = localStorage.getItem('family_saved_key');
+        const savedMembers = localStorage.getItem('family_saved_members');
 
-      if (savedKey) document.getElementById('api-key-input').value = savedKey;
-      if (savedMembers) document.getElementById('members-input').value = savedMembers;
+        if (savedKey) document.getElementById('api-key-input').value = savedKey;
+        if (savedMembers) document.getElementById('members-input').value = savedMembers;
+      } catch (e) {
+        console.warn("No se pudo leer la configuración previa de localStorage:", e);
+      }
     });
   </script>
 </body>
